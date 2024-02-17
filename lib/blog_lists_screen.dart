@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:http/http.dart' as http;
@@ -11,7 +12,7 @@ class BlogListScreen extends StatelessWidget {
 
   Future<List<BlogModel>> fetchBlogs() async {
     final response =
-        await http.get(Uri.parse('http://127.0.0.1:8000/api/blogs'));
+        await http.get(Uri.parse('${Helper.productionUrl}/api/blogs'));
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body)['blogs'];
       List<BlogModel> blogs =
@@ -118,7 +119,7 @@ class BlogListScreen extends StatelessWidget {
                     //     'body': Style(
                     //       maxLines: 1, // Restrict to 3 lines
                     //       textOverflow: TextOverflow.ellipsis,
-                          
+
                     //     ),
                     //   },
                     // ),
