@@ -1,16 +1,15 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:dotted_border/dotted_border.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:green_guard_app/image_predict_success_screen.dart';
+import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/service/image_picker_service.dart';
-import 'package:green_guard_app/service/messenger_service.dart';
+import 'package:green_guard_app/service/image_uploader_service.dart';
 import 'package:green_guard_app/widgets/cm_card.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:logger/logger.dart';
-import 'package:path/path.dart' as Path;
+import 'package:lottie/lottie.dart';
 
 class ImageUploadScreen extends StatefulWidget {
   const ImageUploadScreen({super.key});
@@ -22,74 +21,79 @@ class ImageUploadScreen extends StatefulWidget {
 class _ImageUploadScreenState extends State<ImageUploadScreen> {
   File? _photo;
 
-  Future<void> onPressedHandler(BuildContext context) async {
-    ImagePickerService service = ImagePickerService();
-    XFile? file = await service.call(context);
+ Future<void> onPressedHandler(BuildContext context) async {
+  ImagePickerService service = ImagePickerService();
 
-    if (file != null) {
-      _photo = File(file.path);
-      // uploadFile();
-      MessengerService.of(context)
-          .showLoading(future: (() => uploadFile()), debugSource: '#onpress');
+  XFile? file = await service.call(context);
 
-      Logger().d(file.path);
-    } else {
-      Logger().d('Error');
+  if (file != null) {
+    // Show loading dialog
+    buildDialog(context);
+
+    // Delay for 3 seconds
+    await Future.delayed(const Duration(seconds: 2));
+
+    Navigator.pop(context); 
+    _photo = File(file.path);
+    List<PredictionModel> predictions =
+        await ImageUploaderService.uploadImage(_photo);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImagePredictSuccessScreen(
+          predictions: predictions,
+        ),
+      ),
+    );
+  } else {
+    if (kDebugMode) {
+      print('There is Error Occur');
     }
   }
+}
 
-  Future uploadFile() async {
-    if (_photo == null) return;
-    final fileName = Path.basename(_photo!.path);
-    final destination = 'files/$fileName';
+ Future<dynamic> buildDialog(BuildContext context) {
+   return showDialog(
+    context: context, // Use the stored context
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        alignment: Alignment.center,
+        content: Lottie.asset(
+          'assets/images/loading.json',
+          width: 85,
+          height: 85,
+        ),
+      );
+    },
+  );
+ }
 
-    try {
-      final ref = FirebaseStorage.instance.ref(destination).child('file/');
-      await ref.putFile(_photo!);
-      final downloadUrl = await ref.getDownloadURL();
-      final bytes =
-          await Dio().get(downloadUrl).then((response) => response.data);
-      final imageProvider = NetworkImage(downloadUrl);
-      Logger().d(imageProvider);
-    } catch (e) {
-      print(e);
-      print('errr');
-    }
-  }
+
+  // Future uploadFile() async {
+  //   if (_photo == null) return;
+  //   final fileName = Path.basename(_photo!.path);
+  //   final destination = 'files/$fileName';
+
+  //   try {
+  //     final ref = FirebaseStorage.instance.ref(destination).child('file/');
+  //     await ref.putFile(_photo!);
+  //     final downloadUrl = await ref.getDownloadURL();
+  //     final bytes =
+  //         await Dio().get(downloadUrl).then((response) => response.data);
+  //     final imageProvider = NetworkImage(downloadUrl);
+  //     Logger().d(imageProvider);
+  //   } catch (e) {
+  //     print(e);
+  //     print('errr');
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFE8F5E9),
       body: buildContent(),
-      bottomNavigationBar: buildButtonNavBar(),
     );
-  }
-
-  GNav buildButtonNavBar() {
-    return const GNav(
-        iconSize: 24,
-        gap: 8,
-        backgroundColor: Colors.white,
-        color: Color(0xFF81C784),
-        tabs: [
-          GButton(
-            icon: Icons.home_outlined,
-            text: 'Home',
-          ),
-          GButton(
-            icon: Icons.favorite_outline,
-            text: 'Favorite',
-          ),
-          GButton(
-            icon: Icons.library_books_outlined,
-            text: 'Blog',
-          ),
-          GButton(
-            icon: Icons.account_circle_outlined,
-            text: 'Account',
-          )
-        ]);
   }
 
   Widget buildContent() {
