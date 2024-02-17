@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:green_guard_app/image_predict_success_screen.dart';
 
 class CmCard extends StatelessWidget {
   final String image;
@@ -16,13 +15,7 @@ class CmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const ImagePredictSuccessScreen(),
-          ),
-        );
-      },
+      onTap: () {},
       child: SizedBox(
         width: 260,
         height: 240,

@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/constraint/disease_constant.dart';
+import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/widgets/cm_bottom_sheet.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class ImagePredictSuccessScreen extends StatelessWidget {
-  const ImagePredictSuccessScreen({super.key});
+  final List<PredictionModel> predictions;
+  const ImagePredictSuccessScreen({
+    super.key,
+    required this.predictions,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Stack(
-          children: [
-            buildBackButton(context),
-            buildContent(context),
-          ],
-        ),
-        backgroundColor: const Color(0xFFE8F5E9),
-        bottomNavigationBar: buildButton(context));
+      body: Stack(
+        children: [
+          buildBackButton(context),
+          buildContent(context),
+        ],
+      ),
+      backgroundColor: const Color(0xFFE8F5E9),
+      bottomNavigationBar: buildButton(context),
+    );
   }
 
   Positioned buildBackButton(BuildContext context) {
@@ -96,6 +103,10 @@ class ImagePredictSuccessScreen extends StatelessWidget {
   }
 
   Widget buildImageCard(BuildContext context) {
+    DiseaseConstant diseaseConstant = DiseaseConstant();
+
+    PredictionModel bestPrediction =
+        PredictionModel.findMaxProbability(predictions);
     return Container(
       width: 320,
       height: 240,
@@ -125,24 +136,24 @@ class ImagePredictSuccessScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Expanded(
+          Expanded(
             flex: 3,
             child: Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 8),
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   ListTile(
                     title: Text(
-                      'ជំងឺស្លឺកត្នោត',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      diseaseConstant.getTitleInKhmer(bestPrediction.name),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text(
+                    subtitle: const Text(
                       'ជំងឺស្លឺកត្នោតអាចបណ្តាលមកពីកត្តាផ្សេងៗ ហើយហេតុផលជាក់លាក់អាចប្រែប្រួលអង្ករសំរូបត្រូវបានកែច្នៃតិចជាងអង្ករស។ វានៅតែមានស្រទាប់កន្ទក់',
                     ),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: TextButton(
                       onPressed: null,
                       child: Text(
@@ -166,56 +177,63 @@ class ImagePredictSuccessScreen extends StatelessWidget {
   Widget buildPieChart() {
     return Padding(
       padding: const EdgeInsets.only(left: 15),
-      child: Row(
-        children: [
-          Column(
-            children: [
-              buildPercentIndicator(0.9, const Color(0xFFE57373),
-                  'Brown Spot              ', '90%'),
-              buildPercentIndicator(0.75, const Color(0xFFBA68C8),
-                  'Stem Rot                 ', '75%'),
-              buildPercentIndicator(0.68, const Color(0xFF64B5F6),
-                  'Materail Leaf Blight ', '68%'),
-              buildPercentIndicator(0.50, const Color(0xFFFFA726),
-                  'False Smut              ', '50%'),
-              buildPercentIndicator(0.20, const Color(0xFFDCE775),
-                  'Rice Blast                ', '20%'),
-              buildPercentIndicator(0.20, const Color(0xFFEC407A),
-                  'Shealt Blight            ', '20%'),
-              buildPercentIndicator(0.06, const Color(0xFF26A69A),
-                  'Tungro                     ', '6%'),
-            ],
-          ),
-        ],
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: predictions.length,
+        itemBuilder: (context, index) {
+          PredictionModel prediction = predictions[index];
+          double roundedProbability =
+              double.parse((prediction.probability).toStringAsFixed(2));
+          String subtitle = '${roundedProbability.toString()}%';
+
+          return buildPercentIndicator(
+            roundedProbability / 100,
+            const Color(0xFF43A047),
+            prediction.name,
+            subtitle,
+          );
+        },
+        separatorBuilder: (context, index) {
+          return const SizedBox(
+            height: 3,
+          );
+        },
       ),
     );
   }
 
-  LinearPercentIndicator buildPercentIndicator(
+  Widget buildPercentIndicator(
     double percent,
     Color progressColor,
     String title,
     String subtitle,
   ) {
-    return LinearPercentIndicator(
-      barRadius: const Radius.circular(10),
-      width: 180.0,
-      lineHeight: 14.0,
-      percent: percent,
-      backgroundColor: Colors.white,
-      progressColor: progressColor,
-      leading: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w400),
-      ),
-      center: Text(
-        subtitle,
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
+    DiseaseConstant diseaseConstant = DiseaseConstant();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          diseaseConstant.getTitleInKhmer(title),
+          style: const TextStyle(fontWeight: FontWeight.w400),
         ),
-      ),
+        LinearPercentIndicator(
+          barRadius: const Radius.circular(10),
+          width: 180.0,
+          lineHeight: 14.0,
+          percent: percent,
+          backgroundColor: Colors.white,
+          progressColor: progressColor,
+          center: Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
