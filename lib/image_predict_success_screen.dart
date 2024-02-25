@@ -1,24 +1,65 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
+import 'package:green_guard_app/constraint/helper.dart';
+import 'package:green_guard_app/detailpage.dart';
+import 'package:green_guard_app/model/blog_model.dart';
 import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/widgets/cm_bottom_sheet.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:http/http.dart' as http;
 
 class ImagePredictSuccessScreen extends StatelessWidget {
   final List<PredictionModel> predictions;
+  final File? photo;
   const ImagePredictSuccessScreen({
     super.key,
     required this.predictions,
+    this.photo,
   });
+
+  Future<BlogModel> fetchBlogDetails(String title) async {
+    final response = await http
+        .get(Uri.parse('${Helper.developmentUrl}/api/blogs/show/$title'));
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      Map<String, dynamic> blogData = responseData['blog'];
+
+      BlogModel blog = BlogModel.fromJson(blogData);
+
+      return blog;
+    } else {
+      throw Exception('Failed to load blog');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    PredictionModel bestPrediction =
+        PredictionModel.findMaxProbability(predictions);
+    DiseaseConstant diseaseConstant = DiseaseConstant();
+    String title = diseaseConstant.getTitleInKhmer(bestPrediction.name);
     return Scaffold(
       body: Stack(
         children: [
           buildBackButton(context),
-          buildContent(context),
+          FutureBuilder(
+            future: fetchBlogDetails(title),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else {
+                return buildContent(context, title, snapshot.data!.id);
+              }
+            },
+          ),
         ],
       ),
       backgroundColor: const Color(0xFFE8F5E9),
@@ -39,36 +80,44 @@ class ImagePredictSuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget buildContent(BuildContext context) {
+  Widget buildContent(BuildContext context, String title, int id) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(
-              height: 25,
-            ),
-            Lottie.asset(
-              'assets/images/success.json',
-              width: 250,
-              // height: 230,
-            ),
-            const Text(
-              'ការវិភាគរូបភាពទទួលបានជោគជ័យ',
-              style: TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.w600,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 25,
               ),
-            ),
-            const SizedBox(
-              height: 15,
-            ),
-            buildImageCard(context),
-            const SizedBox(
-              height: 15,
-            ),
-          ],
+              Lottie.asset(
+                'assets/images/success.json',
+                width: 250,
+                // height: 230,
+              ),
+              const Text(
+                'ការវិភាគរូបភាពទទួលបានជោគជ័យ',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(
+                height: 15,
+              ),
+              buildImageCard(context, title, id),
+              const SizedBox(
+                height: 15,
+              ),
+              if(photo!= null)
+              Image.file(
+                photo!,
+                width: 200,
+                height: 200,
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -102,11 +151,10 @@ class ImagePredictSuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget buildImageCard(BuildContext context) {
+  Widget buildImageCard(BuildContext context, String title, int id) {
     DiseaseConstant diseaseConstant = DiseaseConstant();
-
-    PredictionModel bestPrediction =
-        PredictionModel.findMaxProbability(predictions);
+    List<String> images = diseaseConstant.getDiseaseImageList(title);
+    String mainImages = images[0];
     return Container(
       width: 320,
       height: 240,
@@ -128,8 +176,8 @@ class ImagePredictSuccessScreen extends StatelessWidget {
                 topLeft: Radius.circular(8.0),
                 bottomLeft: Radius.circular(8.0),
               ),
-              child: Image.network(
-                'https://www.kissanghar.pk/assets/img/insect_blogs/40371820220606214.png',
+              child: Image.asset(
+                mainImages,
                 fit: BoxFit.fill,
                 width: 260,
                 height: 260,
@@ -145,7 +193,7 @@ class ImagePredictSuccessScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     title: Text(
-                      diseaseConstant.getTitleInKhmer(bestPrediction.name),
+                      title,
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w600),
                     ),
@@ -153,10 +201,16 @@ class ImagePredictSuccessScreen extends StatelessWidget {
                       'ជំងឺស្លឺកត្នោតអាចបណ្តាលមកពីកត្តាផ្សេងៗ ហើយហេតុផលជាក់លាក់អាចប្រែប្រួលអង្ករសំរូបត្រូវបានកែច្នៃតិចជាងអង្ករស។ វានៅតែមានស្រទាប់កន្ទក់',
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: TextButton(
-                      onPressed: null,
-                      child: Text(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => DetailPage(id: id),
+                          ),
+                        );
+                      },
+                      child: const Text(
                         'មើល​បន្ថែម​ទៀត',
                         style: TextStyle(
                           color: Color(0xFF43A047),
