@@ -1,23 +1,24 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
+
+
 
 class BlogListScreen extends StatelessWidget {
   const BlogListScreen({super.key});
 
   Future<List<BlogModel>> fetchBlogs() async {
     final response =
-        await http.get(Uri.parse('${Helper.productionUrl}/api/blogs'));
+        await http.get(Uri.parse('${Helper.developmentUrl}/api/blogs'));
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body)['blogs'];
       List<BlogModel> blogs =
           data.map((json) => BlogModel.fromJson(json)).toList();
-      Logger().d(data);
       return blogs;
     } else {
       throw Exception('Failed to load blogs');
@@ -55,7 +56,12 @@ class BlogListScreen extends StatelessWidget {
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
                 final blog = snapshot.data![index];
-                return buildImageCard(context, blog.title, blog.body, blog.id);
+                DiseaseConstant diseaseConstant = DiseaseConstant();
+                List<String> images = diseaseConstant
+                    .getDiseaseImageList(blog.title);
+                String mainImage = images[0];
+
+                return buildImageCard(context, blog.title, blog.body, blog.id ,mainImage);
               },
             ),
           );
@@ -65,7 +71,7 @@ class BlogListScreen extends StatelessWidget {
   }
 
   Widget buildImageCard(
-      BuildContext context, String title, String body, int id) {
+      BuildContext context, String title, String body, int id, String mainImage) {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -95,8 +101,8 @@ class BlogListScreen extends StatelessWidget {
                   topLeft: Radius.circular(8.0),
                   bottomLeft: Radius.circular(8.0),
                 ),
-                child: Image.network(
-                  'https://www.kissanghar.pk/assets/img/insect_blogs/40371820220606214.png',
+                child: Image.asset(
+                  mainImage,
                   fit: BoxFit.fill,
                   height: 100,
                 ),
@@ -123,6 +129,7 @@ class BlogListScreen extends StatelessWidget {
                     //     ),
                     //   },
                     // ),
+                    
                   ),
                 ],
               ),

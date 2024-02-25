@@ -52,10 +52,11 @@ class ImagePickerService {
       ],
     );
 
+
     if (croppedFile == null) return null;
     return XFile.fromData(
       await croppedFile.readAsBytes(),
-      path: file.path,
+      path: croppedFile.path,
     );
   }
 }
