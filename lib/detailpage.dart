@@ -17,6 +17,30 @@ class DetailPage extends StatelessWidget {
   });
   final int id;
 
+  Future<bool> favoriteBlog(int blogId, int userId) async {
+    String apiUrl = 'http://127.0.0.1:8000/api/blogs/$blogId/favorite';
+
+    // Prepare the request body
+    Map<String, dynamic> requestBody = {
+      'user_id': userId.toString(),
+    };
+
+    // Send POST request
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      body: jsonEncode(requestBody),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 201) {
+      return true;
+    }
+    return false;
+  }
+
   Future<BlogModel> fetchBlogDetails() async {
     final response = await http
         .get(Uri.parse('${Helper.developmentUrl}/api/blogs/show/$id'));
@@ -150,13 +174,35 @@ class DetailPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(
-                              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtPs8ubbPPA31JXQNO9P4WAnPpGQTJFINxn34IwJhk2AgIcDmHKMiojrVfcuPMJMxerBc&usqp=CAU'),
+                      SizedBox(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: 200,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage: NetworkImage(
+                                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtPs8ubbPPA31JXQNO9P4WAnPpGQTJFINxn34IwJhk2AgIcDmHKMiojrVfcuPMJMxerBc&usqp=CAU'),
+                                ),
+                                title: Text('ចុំ បញ្ញា'),
+                                subtitle: Text('Feb 05 2024'),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: InkWell(
+                                onTap: () {
+                                  favoriteBlog(id, 1);
+                                },
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            )
+                          ],
                         ),
-                        title: Text('ចុំ បញ្ញា'),
-                        subtitle: Text('Feb 05 2024'),
                       ),
                       Padding(
                         padding: EdgeInsets.all(10.0),
