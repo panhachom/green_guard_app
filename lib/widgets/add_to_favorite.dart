@@ -4,75 +4,77 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
+import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: AddToFavorite(),
-    );
-  }
-}
-
 class AddToFavorite extends StatefulWidget {
+  const AddToFavorite({super.key});
+
   @override
-  _AddToFavoriteState createState() => _AddToFavoriteState();
+  AddToFavoriteState createState() => AddToFavoriteState();
 }
 
-Future<void> favoriteBlog(int blogId, int userId) async {
-  String apiUrl = 'http://127.0.0.1:8000/api/blogs/$blogId/favorite';
+class AddToFavoriteState extends State<AddToFavorite> {
+  Future<void> favoriteBlog(int blogId, int userId) async {
+    String apiUrl = 'http://127.0.0.1:8000/api/blogs/$blogId/favorite';
 
-  // Prepare the request body
-  Map<String, dynamic> requestBody = {
-    'user_id': userId.toString(),
-  };
+    // Prepare the request body
+    Map<String, dynamic> requestBody = {
+      'user_id': userId.toString(),
+    };
 
-  // Send POST request
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      body: jsonEncode(requestBody),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-    );
+    // Send POST request
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: jsonEncode(requestBody),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
 
-    if (response.statusCode == 201) {
-      print('Remove successfully!');
-    } else {
-      print('Failed to favorite blog: ${response.reasonPhrase}');
+      if (response.statusCode == 201) {
+        print('Remove successfully!');
+      } else {
+        print('Failed to favorite blog: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error: $e');
     }
-  } catch (e) {
-    print('Error: $e');
   }
-}
 
-Future<List<BlogModel>> fetchBlogs(String userId) async {
-  final response = await http
-      .get(Uri.parse('${Helper.developmentUrl}/api/favorites?user_id=$userId'));
-  if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body)['blogs'];
-    List<BlogModel> blogs =
-        data.map((json) => BlogModel.fromJson(json)).toList();
-    return blogs;
-  } else {
-    throw Exception('Failed to load blogs');
+  Future<List<BlogModel>> fetchBlogs(String userId) async {
+    final response = await http.get(
+        Uri.parse('${Helper.developmentUrl}/api/favorites?user_id=$userId'));
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body)['blogs'];
+      List<BlogModel> blogs =
+          data.map((json) => BlogModel.fromJson(json)).toList();
+      return blogs;
+    } else {
+      throw Exception('Failed to load blogs');
+    }
   }
-}
 
-class _AddToFavoriteState extends State<AddToFavorite> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('ជម្ងឺដែលអ្នកបាន ចំណាំទុក'),
+          title: const ListTile(
+            leading: Icon(
+              Icons.favorite,
+              color: Colors.red,
+            ),
+            title: Text(
+              'អត្ថបទចូលចិត្ត',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
+              textAlign: TextAlign.start,
+            ),
+          ),
+          centerTitle: false,
         ),
+        backgroundColor: const Color(0xFFE8F5E9),
         body: FutureBuilder<List<BlogModel>>(
           future: fetchBlogs(1.toString()),
           builder: (context, snapshot) {
@@ -81,7 +83,7 @@ class _AddToFavoriteState extends State<AddToFavorite> {
             } else if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
             } else {
-              return Padding(
+              return Container(
                 padding: const EdgeInsets.only(left: 4, right: 4, top: 2),
                 child: ListView.builder(
                   itemCount: snapshot.data!.length,
@@ -101,8 +103,19 @@ class _AddToFavoriteState extends State<AddToFavorite> {
         ));
   }
 
-  Slidable buildCard(BlogModel? blog, String mainImage) {
-    return Slidable(
+  Widget buildCard(BlogModel? blog, String mainImage) {
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.black,
+          width: 0.1,
+        ),
+      ),
+      height: 100,
+      child: Slidable(
         key: ValueKey(blog?.id),
         endActionPane: ActionPane(
           motion: ScrollMotion(),
@@ -111,72 +124,99 @@ class _AddToFavoriteState extends State<AddToFavorite> {
               flex: 2,
               onPressed: (context) async {
                 await favoriteBlog(blog?.id ?? 0, 1);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Removed From Favorite',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    backgroundColor: Color.fromARGB(255, 217, 91, 91),
+                  ),
+                );
                 setState(() {
                   fetchBlogs(1.toString());
                 });
               },
-
               backgroundColor: Color.fromARGB(255, 217, 91, 91),
               foregroundColor: Colors.white,
               icon: Icons.delete,
               label: 'Remove',
-              // width: 100, // Set the width directly
             ),
           ],
         ),
-        child: Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey
-                    .withOpacity(0.5), // Adjust transparency for depth
-                blurRadius: 15,
-                offset: Offset(0, 5), // Adjust offset downwards
-              ),
-            ],
+        child: buildImageCard(
+          context,
+          blog?.title ?? '',
+          blog?.body ?? '',
+          blog?.id ?? 0,
+          mainImage,
+        ),
+      ),
+    );
+  }
+
+  Widget buildImageCard(
+    BuildContext context,
+    String title,
+    String body,
+    int id,
+    String mainImage,
+  ) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DetailPage(id: id),
           ),
-          margin: EdgeInsets.all(10),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        height: 100,
+        // decoration: BoxDecoration(
+        //   borderRadius: BorderRadius.circular(15),
+        //   border: Border.all(
+        //     color: Colors.black,
+        //     width: 0.1,
+        //   ),
+        // ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(8.0),
+                  bottomLeft: Radius.circular(8.0),
+                ),
                 child: Image.asset(
                   mainImage,
-                  width: 100,
+                  fit: BoxFit.fill,
                   height: 100,
-                  fit: BoxFit.cover, // Adjust as needed
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        blog?.title ?? '',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                        maxLines: 2, // Allow up to 2 lines for title
-                        overflow: TextOverflow
-                            .ellipsis, // Add ellipsis (...) if truncated
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Text(blog?.createdAt ?? ''),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                    ],
+            ),
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ListTile(
+                    title: Text(
+                      title,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: const Text('Some subtitle can do not have yet'),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:green_guard_app/blog_lists_screen.dart';
 import 'package:green_guard_app/firebase_options.dart';
 import 'package:green_guard_app/image_upload_screen.dart';
+import 'package:green_guard_app/widgets/add_to_favorite.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<Widget> _screens = [
     const ImageUploadScreen(),
     const BlogListScreen(),
-    Container()
+    const AddToFavorite()
   ];
 
   @override

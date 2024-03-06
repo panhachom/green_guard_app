@@ -7,17 +7,58 @@ import 'package:full_screen_image/full_screen_image.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/model/blog_model.dart';
+import 'package:green_guard_app/widgets/add_to_favorite.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 
-class DetailPage extends StatelessWidget {
+class DetailPage extends StatefulWidget {
   const DetailPage({
     super.key,
     required this.id,
   });
   final int id;
 
-  Future<bool> favoriteBlog(int blogId, int userId) async {
+  @override
+  State<DetailPage> createState() => _DetailPageState();
+}
+
+class _DetailPageState extends State<DetailPage> {
+  late bool isFavorite = false;
+  @override
+  void initState() {
+    super.initState();
+    Logger().d('Hi');
+    checkFavorite(widget.id, 1);
+  }
+
+  Future<void> checkFavorite(int blogId, int userId) async {
+    String apiUrl =
+        'http://127.0.0.1:8000/api/blogs/$blogId/check-favorite?user_id=$userId';
+
+    final response = await http.get(
+      Uri.parse(apiUrl),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+      bool isFavorited = data['is_favorite'];
+
+      if (isFavorited == true) {
+        setState(() {
+          isFavorite = true;
+        });
+      }
+    } else {
+      // Handle other status codes or errors
+      throw Exception('Failed to check favorite status');
+    }
+  }
+
+  Future<void> favoriteBlog(int blogId, int userId) async {
     String apiUrl = 'http://127.0.0.1:8000/api/blogs/$blogId/favorite';
 
     // Prepare the request body
@@ -34,16 +75,64 @@ class DetailPage extends StatelessWidget {
         'Content-Type': 'application/json; charset=UTF-8',
       },
     );
+    Logger().d(response.statusCode);
 
     if (response.statusCode == 201) {
-      return true;
+      setState(() {
+        isFavorite = true;
+      });
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Like',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    maintainState: true, // Maintain state of previous screen
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        const AddToFavorite(),
+                  ),
+                );
+              },
+              child: const Text(
+                'View Favorite List',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            )
+          ],
+        ),
+        behavior: SnackBarBehavior.floating, // Change behavior to floating
+      ));
     }
-    return false;
+    if (response.statusCode == 200) {
+      setState(() {
+        isFavorite = false;
+      });
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+          'Unlike',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        behavior: SnackBarBehavior.floating, // Change behavior to floating
+      ));
+    }
   }
 
   Future<BlogModel> fetchBlogDetails() async {
     final response = await http
-        .get(Uri.parse('${Helper.developmentUrl}/api/blogs/show/$id'));
+        .get(Uri.parse('${Helper.developmentUrl}/api/blogs/show/${widget.id}'));
     if (response.statusCode == 200) {
       Map<String, dynamic> responseData = jsonDecode(response.body);
       Map<String, dynamic> blogData = responseData['blog'];
@@ -159,16 +248,14 @@ class DetailPage extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Add some spacing between the grid and text
-
-                          // Other grid tiles with Tsile widgets
                         ],
                       ),
                       Padding(
-                        padding: EdgeInsets.all(10.0), // Margin on all sides
+                        padding:
+                            const EdgeInsets.all(10.0), // Margin on all sides
                         child: Text(
                           snapshot.data!.title,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                           ),
@@ -178,7 +265,7 @@ class DetailPage extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 200,
                               child: ListTile(
                                 leading: CircleAvatar(
@@ -191,21 +278,23 @@ class DetailPage extends StatelessWidget {
                             ),
                             Padding(
                               padding: const EdgeInsets.only(right: 16),
-                              child: InkWell(
-                                onTap: () {
-                                  favoriteBlog(id, 1);
-                                },
-                                child: Icon(
-                                  Icons.favorite,
-                                  color: Colors.red,
+                              child: IconButton(
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : null,
                                 ),
+                                onPressed: () async {
+                                  favoriteBlog(widget.id, 1);
+                                },
                               ),
                             )
                           ],
                         ),
                       ),
                       Padding(
-                        padding: EdgeInsets.all(10.0),
+                        padding: const EdgeInsets.all(10.0),
                         child: Html(
                           data: snapshot.data?.body,
                           style: {

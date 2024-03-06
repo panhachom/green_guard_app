@@ -7,8 +7,6 @@ import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:http/http.dart' as http;
 
-
-
 class BlogListScreen extends StatelessWidget {
   const BlogListScreen({super.key});
 
@@ -29,10 +27,16 @@ class BlogListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'ចំណេះដឹងថ្មីៗ',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.start,
+        title: const ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            Icons.note,
+          ),
+          title: Text(
+            'ចំណេះដឹងថ្មីៗ',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
+            textAlign: TextAlign.start,
+          ),
         ),
         centerTitle: false,
       ),
@@ -57,11 +61,12 @@ class BlogListScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final blog = snapshot.data![index];
                 DiseaseConstant diseaseConstant = DiseaseConstant();
-                List<String> images = diseaseConstant
-                    .getDiseaseImageList(blog.title);
+                List<String> images =
+                    diseaseConstant.getDiseaseImageList(blog.title);
                 String mainImage = images[0];
 
-                return buildImageCard(context, blog.title, blog.body, blog.id ,mainImage);
+                return buildImageCard(
+                    context, blog.title, blog.body, blog.id, mainImage);
               },
             ),
           );
@@ -70,8 +75,8 @@ class BlogListScreen extends StatelessWidget {
     );
   }
 
-  Widget buildImageCard(
-      BuildContext context, String title, String body, int id, String mainImage) {
+  Widget buildImageCard(BuildContext context, String title, String body, int id,
+      String mainImage) {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -129,7 +134,6 @@ class BlogListScreen extends StatelessWidget {
                     //     ),
                     //   },
                     // ),
-                    
                   ),
                 ],
               ),
