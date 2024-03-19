@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/blog_lists_screen.dart';
+import 'package:green_guard_app/widgets/add_to_favorite.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 void main() {
@@ -53,11 +55,23 @@ class ProfileScreen extends StatelessWidget {
               ProfileMenuWidget(
                   title: 'ជំងឺដែលបានកត់ទុក (WhiteList)',
                   icon: LineAwesomeIcons.heart,
-                  onPress: () {}),
+                  onPress: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AddToFavorite(),
+                      ),
+                    );
+                  }),
               ProfileMenuWidget(
                   title: 'ជំងឺទូទៅ (Blog) ',
                   icon: LineAwesomeIcons.newspaper,
-                  onPress: () {}),
+                  onPress: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => BlogListScreen(),
+                      ),
+                    );
+                  }),
 
               ProfileMenuWidget(
                   title: 'Logout',
