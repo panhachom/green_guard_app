@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:green_guard_app/image_upload_screen.dart';
+import 'package:green_guard_app/main.dart';
 import 'package:lottie/lottie.dart';
 
 class ImagePredictFailScreen extends StatelessWidget {
@@ -21,11 +22,13 @@ class ImagePredictFailScreen extends StatelessWidget {
       padding: const EdgeInsets.only(top: 20, bottom: 20, left: 10, right: 10),
       child: ElevatedButton(
         onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) {
-              return const ImageUploadScreen();
-            },
-          ));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return const MyHomePage(selectedIndex: 0);
+              },
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
             backgroundColor: const Color(
@@ -101,31 +104,31 @@ class ImagePredictFailScreen extends StatelessWidget {
 
   Center buildImage() {
     return Center(
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5), // Shadow color
-                    spreadRadius: 5, // Spread radius
-                    blurRadius: 7, // Blur radius
-                    offset: const Offset(0, 3), // Offset in x and y directions
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(10), // Optional: Add border radius
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1698150098242-cc61d0df20eb?q=80&w=3131&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                  width: 150,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
-              ),
+      child: Container(
+        width: 150,
+        height: 150,
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5), // Shadow color
+              spreadRadius: 5, // Spread radius
+              blurRadius: 7, // Blur radius
+              offset: const Offset(0, 3), // Offset in x and y directions
             ),
-          );
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius:
+              BorderRadius.circular(10), // Optional: Add border radius
+          child: Image.network(
+            'https://images.unsplash.com/photo-1698150098242-cc61d0df20eb?q=80&w=3131&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            width: 150,
+            height: 150,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget buildSuggestionText(String number, String title) {

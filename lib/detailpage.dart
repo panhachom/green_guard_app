@@ -6,10 +6,13 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:full_screen_image/full_screen_image.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
+import 'package:green_guard_app/login_screen.dart';
 import 'package:green_guard_app/model/blog_model.dart';
+import 'package:green_guard_app/service/user_service.dart';
 import 'package:green_guard_app/widgets/add_to_favorite.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
 class DetailPage extends StatefulWidget {
@@ -25,11 +28,33 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   late bool isFavorite = false;
+  bool isSignin = false;
+  int userId = 0;
   @override
   void initState() {
     super.initState();
-    Logger().d('Hi');
-    checkFavorite(widget.id, 1);
+    checkUserLoggedIn();
+    getUserId();
+  }
+
+  Future<void> checkUserLoggedIn() async {
+    UserService userService = UserService();
+    bool isLoggedIn = await userService.isUserLoggedIn();
+    setState(() {
+      isSignin = isLoggedIn;
+    });
+    if (isLoggedIn) {
+      getUserId();
+      checkFavorite(widget.id, userId);
+    }
+  }
+
+  Future<void> getUserId() async {
+    UserService userService = UserService();
+    int? id = await userService.getUserId();
+    setState(() {
+      userId = id ?? 0;
+    });
   }
 
   Future<void> checkFavorite(int blogId, int userId) async {
@@ -84,34 +109,36 @@ class _DetailPageState extends State<DetailPage> {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Like',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    maintainState: true, // Maintain state of previous screen
-                    pageBuilder: (context, animation, secondaryAnimation) =>
-                        const AddToFavorite(),
-                  ),
-                );
-              },
-              child: const Text(
-                'View Favorite List',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'ចូលចិត្ត',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            )
-          ],
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      maintainState: true, // Maintain state of previous screen
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const AddToFavorite(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'មើលអត្ដបទដែលចូលចិត្ត',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              )
+            ],
+          ),
+          behavior: SnackBarBehavior.floating, // Change behavior to floating
         ),
-        behavior: SnackBarBehavior.floating, // Change behavior to floating
-      ));
+      );
     }
     if (response.statusCode == 200) {
       setState(() {
@@ -122,7 +149,7 @@ class _DetailPageState extends State<DetailPage> {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text(
-          'Unlike',
+          'មិន​ចូលចិត្ត',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         behavior: SnackBarBehavior.floating, // Change behavior to floating
@@ -168,6 +195,15 @@ class _DetailPageState extends State<DetailPage> {
               DiseaseConstant diseaseConstant = DiseaseConstant();
               List<String> images = diseaseConstant
                   .getDiseaseImageList(snapshot.data?.title ?? '');
+
+              String? createdAt = snapshot.data?.createdAt;
+
+              String formattedDate = '';
+
+              if (createdAt != null) {
+                formattedDate =
+                    DateFormat.yMMMd().format(DateTime.parse(createdAt));
+              }
 
               return SingleChildScrollView(
                 child: Padding(
@@ -254,7 +290,7 @@ class _DetailPageState extends State<DetailPage> {
                         padding:
                             const EdgeInsets.all(10.0), // Margin on all sides
                         child: Text(
-                          snapshot.data!.title,
+                          snapshot.data!.title ?? '',
                           style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
@@ -265,15 +301,16 @@ class _DetailPageState extends State<DetailPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 200,
                               child: ListTile(
-                                leading: CircleAvatar(
+                                leading: const CircleAvatar(
                                   backgroundImage: NetworkImage(
                                       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtPs8ubbPPA31JXQNO9P4WAnPpGQTJFINxn34IwJhk2AgIcDmHKMiojrVfcuPMJMxerBc&usqp=CAU'),
                                 ),
-                                title: Text('ចុំ បញ្ញា'),
-                                subtitle: Text('Feb 05 2024'),
+                                title:
+                                    Text(snapshot.data?.user?.name ?? 'User'),
+                                subtitle: Text(formattedDate),
                               ),
                             ),
                             Padding(
@@ -286,7 +323,11 @@ class _DetailPageState extends State<DetailPage> {
                                   color: isFavorite ? Colors.red : null,
                                 ),
                                 onPressed: () async {
-                                  favoriteBlog(widget.id, 1);
+                                  if (isSignin == true) {
+                                    favoriteBlog(widget.id, userId);
+                                  } else {
+                                    buildSignInDialog(context);
+                                  }
                                 },
                               ),
                             )
@@ -312,5 +353,36 @@ class _DetailPageState extends State<DetailPage> {
             }
           },
         ));
+  }
+
+  Future<dynamic> buildSignInDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sign In Required'),
+          content: const Text('You need to sign in to favorite this blog.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+                // Navigate to login screen when "Sign In" button is pressed
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: const Text('Sign In'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

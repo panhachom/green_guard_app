@@ -1,22 +1,46 @@
-class BlogModel {
-  final int id;
-  final int userId;
-  final String title;
-  final String body;
-  final String createdAt;
-  BlogModel(
-      {required this.id,
-      required this.userId,
-      required this.title,
-      required this.body,
-      required this.createdAt});
+import 'package:green_guard_app/model/user_model.dart';
 
+class BlogModel {
+  final int? id;
+  final int? userId;
+  final String? title;
+  final String? body;
+  final String? subtitle;
+  final String? createdAt;
+  final String? category;
+  final int? status;
+  final UserModel? user;
+  BlogModel(
+      {this.id,
+      this.userId,
+      this.title,
+      this.body,
+      this.createdAt,
+      this.category,
+      this.status,
+      this.subtitle,
+      this.user});
+
+  static const Map<String, String> CATEGORIES = {
+    'rice_blast': 'ជំងឺ​រលួយក​ស្រូវ',
+    'brown_spot': 'ជំងឺអុតត្នោត',
+    'bacterial_Leaf_blight': 'ជំងឺបាក់តេរីរលាកស្លឺក',
+    'stem_rot': 'ជំងឺរលួយដើម',
+    'falsa_Smut': 'ជំងឺធ្យូងបៃតង',
+    'tungro_diseases': 'ជំងឺទុងគ្រោ',
+    'sheathBlight': 'ជំងឺរលាកស្រទងស្លឹក',
+    'other': 'ផ្សេងទៀត',
+  };
   factory BlogModel.fromJson(Map<String, dynamic> json) {
     return BlogModel(
         id: json['id'],
         userId: json['user_id'],
         title: json['title'],
         body: json['body'],
-        createdAt: json['created_at']);
+        createdAt: json['created_at'],
+        category: json['category'],
+        status: json['status'],
+        subtitle: json['sub_title'],
+        user: json['user'] != null ? UserModel.fromJson(json['user']) : null);
   }
 }

@@ -1,14 +1,33 @@
 import 'dart:convert';
 
+import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
+import 'package:green_guard_app/create_blog_screen.dart';
 import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:http/http.dart' as http;
 
-class BlogListScreen extends StatelessWidget {
+class BlogListScreen extends StatefulWidget {
   const BlogListScreen({super.key});
+
+  @override
+  State<BlogListScreen> createState() => _BlogListScreenState();
+}
+
+class _BlogListScreenState extends State<BlogListScreen> {
+  TextEditingController searchController = TextEditingController();
+  late Future<List<BlogModel>> _futureBlogs;
+  late bool _loading = false;
+  String _selectedCategory = '';
+  late bool showFilter = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureBlogs = fetchBlogs();
+  }
 
   Future<List<BlogModel>> fetchBlogs() async {
     final response =
@@ -23,6 +42,58 @@ class BlogListScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _filterByCategory(String category) async {
+    setState(() {
+      _loading = true;
+    });
+    try {
+      final response = await http.get(Uri.parse(
+          '${Helper.developmentUrl}/api/blogs/filterByCategory/$category'));
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body)['blogs'];
+        List<BlogModel> blogs =
+            data.map((json) => BlogModel.fromJson(json)).toList();
+        setState(() {
+          _futureBlogs = Future.value(blogs);
+          _loading = false;
+        });
+      } else {
+        throw Exception('Failed to filter blogs by category');
+      }
+    } catch (error) {
+      setState(() {
+        _loading = false;
+      });
+      print('Error: $error');
+    }
+  }
+
+  Future<void> searchBlogs(String query) async {
+    setState(() {
+      _loading = true;
+    });
+    try {
+      final response = await http.get(
+          Uri.parse('${Helper.developmentUrl}/api/blogs/search?query=$query'));
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body)['blogs'];
+        List<BlogModel> blogs =
+            data.map((json) => BlogModel.fromJson(json)).toList();
+        setState(() {
+          _futureBlogs = Future.value(blogs);
+          _loading = false;
+        });
+      } else {
+        throw Exception('Failed to search blogs');
+      }
+    } catch (error) {
+      setState(() {
+        _loading = false;
+      });
+      print('Error: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,53 +101,153 @@ class BlogListScreen extends StatelessWidget {
         title: const ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(
-            Icons.note,
+            Icons.feed,
           ),
           title: Text(
             'ចំណេះដឹងថ្មីៗ',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
-            textAlign: TextAlign.start,
           ),
         ),
-        centerTitle: false,
+        actions: [],
+        centerTitle: true,
       ),
       backgroundColor: const Color(0xFFE8F5E9),
-      body: buildContent(),
+      body: Column(
+        children: [
+          // Padding(
+          //   padding: const EdgeInsets.all(8.0),
+          //   child: TextField(
+          //     controller: searchController,
+          //     decoration: InputDecoration(
+          //       hintText: 'Search blogs...',
+          //       suffixIcon: IconButton(
+          //         icon: Icon(Icons.search),
+          //         onPressed: () {
+          //           searchBlogs(searchController.text);
+          //         },
+          //       ),
+          //     ),
+          //   ),
+          // ),
+          Padding(
+            padding:
+                const EdgeInsets.only(top: 0, bottom: 0, left: 10, right: 10),
+            child: Row(
+              children: [
+                AnimSearchBar(
+                  width: 360,
+                  textController: searchController,
+                  onSuffixTap: () {
+                    setState(() {
+                      searchController.clear();
+                    });
+                  },
+                  onSubmitted: (s) {
+                    searchBlogs(s);
+                  },
+                ),
+                Visibility(
+                  visible: showFilter,
+                  child: buildFilter(),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : buildContent(),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: const Color(
+          0xff388E3C,
+        ),
+        foregroundColor: Colors.white,
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const CreateBlogScreen(),
+            ),
+          );
+        },
+        icon: const Icon(Icons.add_circle),
+        label: const Text(
+          'Create Blog',
+          style: TextStyle(fontSize: 15),
+        ),
+      ),
+    );
+  }
+
+  Container buildFilter() {
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.all(8.0),
+      child: DropdownButton<String>(
+        value: _selectedCategory.isNotEmpty ? _selectedCategory : null,
+        hint: Text('Filter'),
+        onChanged: (String? newValue) {
+          if (newValue != null) {
+            _selectedCategory = newValue;
+            _filterByCategory(newValue);
+          }
+        },
+        items:
+            BlogModel.CATEGORIES.entries.map((MapEntry<String, String> entry) {
+          return DropdownMenuItem<String>(
+            value: entry.key,
+            child: Text(entry.value),
+          );
+        }).toList(),
+      ),
     );
   }
 
   FutureBuilder<List<BlogModel>> buildContent() {
     return FutureBuilder<List<BlogModel>>(
-      future: fetchBlogs(),
+      future: _futureBlogs,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Text('Error: ${snapshot.error}');
         } else {
-          return Padding(
-            padding: const EdgeInsets.only(left: 4, right: 4, top: 2),
-            child: ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final blog = snapshot.data![index];
-                DiseaseConstant diseaseConstant = DiseaseConstant();
-                List<String> images =
-                    diseaseConstant.getDiseaseImageList(blog.title);
-                String mainImage = images[0];
+          if (snapshot.data!.isEmpty) {
+            return const Center(child: Text('No results found.'));
+          } else {
+            return Padding(
+              padding: const EdgeInsets.only(left: 4, right: 4, top: 2),
+              child: ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  final blog = snapshot.data![index];
+                  DiseaseConstant diseaseConstant = DiseaseConstant();
+                  List<String> images =
+                      diseaseConstant.getDiseaseImageList(blog.title ?? '');
+                  String mainImage = images[0];
+                  String sub = diseaseConstant.subtitle[index];
 
-                return buildImageCard(
-                    context, blog.title, blog.body, blog.id, mainImage);
-              },
-            ),
-          );
+                  return buildImageCard(
+                      context,
+                      blog.title ?? '',
+                      blog.body ?? '',
+                      blog.id ?? 0,
+                      mainImage,
+                      blog.subtitle ?? '');
+                },
+              ),
+            );
+          }
         }
       },
     );
   }
 
   Widget buildImageCard(BuildContext context, String title, String body, int id,
-      String mainImage) {
+      String mainImage, String sub) {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -124,16 +295,12 @@ class BlogListScreen extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                    // subtitle: Html(
-                    //   data: body,
-                    //   style: {
-                    //     'body': Style(
-                    //       maxLines: 1, // Restrict to 3 lines
-                    //       textOverflow: TextOverflow.ellipsis,
+                    subtitle: Text(
+                      sub,
 
-                    //     ),
-                    //   },
-                    // ),
+                      maxLines: 2, // Restrict to 3 lines
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),

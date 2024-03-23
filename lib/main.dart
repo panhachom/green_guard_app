@@ -3,55 +3,83 @@ import 'package:flutter/material.dart';
 import 'package:green_guard_app/blog_lists_screen.dart';
 import 'package:green_guard_app/firebase_options.dart';
 import 'package:green_guard_app/image_upload_screen.dart';
-import 'package:green_guard_app/widgets/add_to_favorite.dart';
+import 'package:green_guard_app/user_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
-      home: MyHomePage(),
+      home: MyHomePage(
+        selectedIndex: 0,
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  final int selectedIndex;
+
+  const MyHomePage({Key? key, required this.selectedIndex}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+  late PageController _pageController;
 
   final List<Widget> _screens = [
     const ImageUploadScreen(),
     const BlogListScreen(),
-    const AddToFavorite()
+    const ProfileScreen()
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.selectedIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: PageView(
+        controller: _pageController,
+        children: _screens,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (int index) {
           setState(() {
             _currentIndex = index;
+            _pageController.animateToPage(
+              index,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.ease,
+            );
           });
         },
         selectedItemColor: const Color(0xFF4CAF50),
@@ -73,29 +101,3 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
-// GNav buildButtonNavBar() {
-//   return const GNav(
-//       iconSize: 24,
-//       gap: 8,
-//       backgroundColor: Colors.white,
-//       color: Color(0xFF81C784),
-//       tabs: [
-//         GButton(
-//           icon: Icons.home_outlined,
-//           text: 'Home',
-//         ),
-//         GButton(
-//           icon: Icons.favorite_outline,
-//           text: 'Favorite',
-//         ),
-//         GButton(
-//           icon: Icons.library_books_outlined,
-//           text: 'Blog',
-//         ),
-//         GButton(
-//           icon: Icons.account_circle_outlined,
-//           text: 'Account',
-//         )
-//       ]);
-// }

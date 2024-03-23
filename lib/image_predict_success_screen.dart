@@ -8,6 +8,7 @@ import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
 import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/widgets/cm_bottom_sheet.dart';
+import 'package:logger/logger.dart';
 import 'package:lottie/lottie.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:http/http.dart' as http;
@@ -40,6 +41,7 @@ class ImagePredictSuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     PredictionModel bestPrediction =
         PredictionModel.findMaxProbability(predictions);
+    Logger().d(bestPrediction.probability);
     DiseaseConstant diseaseConstant = DiseaseConstant();
     String title = diseaseConstant.getTitleInKhmer(bestPrediction.name);
     return Scaffold(
@@ -56,7 +58,7 @@ class ImagePredictSuccessScreen extends StatelessWidget {
               } else if (snapshot.hasError) {
                 return Text('Error: ${snapshot.error}');
               } else {
-                return buildContent(context, title, snapshot.data!.id);
+                return buildContent(context, title, snapshot.data!.id ?? 0);
               }
             },
           ),
@@ -110,12 +112,12 @@ class ImagePredictSuccessScreen extends StatelessWidget {
               const SizedBox(
                 height: 15,
               ),
-              if(photo!= null)
-              Image.file(
-                photo!,
-                width: 200,
-                height: 200,
-              )
+              // if(photo!= null)
+              // Image.file(
+              //   photo!,
+              //   width: 200,
+              //   height: 200,
+              // )
             ],
           ),
         ),

@@ -1,79 +1,27 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/detailpage.dart';
 import 'package:green_guard_app/model/blog_model.dart';
-import 'package:green_guard_app/service/user_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 
-class AddToFavorite extends StatefulWidget {
-  const AddToFavorite({super.key});
+class UserBlogList extends StatefulWidget {
+  final int id;
+
+  const UserBlogList({super.key, required this.id});
 
   @override
-  AddToFavoriteState createState() => AddToFavoriteState();
+  State<UserBlogList> createState() => _UserBlogListState();
 }
 
-class AddToFavoriteState extends State<AddToFavorite> {
-  bool isSignin = false;
-  int userId = 0;
-
-  Future<void> checkUserLoggedIn() async {
-    UserService userService = UserService();
-    bool isLoggedIn = await userService.isUserLoggedIn();
-    setState(() {
-      isSignin = isLoggedIn;
-    });
-  }
-
-  Future<void> getUserId() async {
-    UserService userService = UserService();
-    int? id = await userService.getUserId();
-    setState(() {
-      userId = id ?? 0;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    checkUserLoggedIn();
-    getUserId();
-  }
-
-  Future<void> favoriteBlog(int blogId, int userId) async {
-    String apiUrl = 'http://127.0.0.1:8000/api/blogs/$blogId/favorite';
-
-    // Prepare the request body
-    Map<String, dynamic> requestBody = {
-      'user_id': userId.toString(),
-    };
-
-    // Send POST request
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        body: jsonEncode(requestBody),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      );
-
-      if (response.statusCode == 201) {
-        print('Remove successfully!');
-      } else {
-        print('Failed to favorite blog: ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      print('Error: $e');
-    }
-  }
-
+class _UserBlogListState extends State<UserBlogList> {
   Future<List<BlogModel>> fetchBlogs(int userId) async {
     final response = await http.get(
-        Uri.parse('${Helper.developmentUrl}/api/favorites?user_id=$userId'));
+      Uri.parse('${Helper.developmentUrl}/api/blogs?user_id=$userId'),
+    );
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body)['blogs'];
       List<BlogModel> blogs =
@@ -94,7 +42,7 @@ class AddToFavoriteState extends State<AddToFavorite> {
             color: Colors.red,
           ),
           title: Text(
-            'មើលអត្ដបទដែលចូលចិត្ត',
+            'Your Blog',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
             textAlign: TextAlign.start,
           ),
@@ -103,7 +51,7 @@ class AddToFavoriteState extends State<AddToFavorite> {
       ),
       backgroundColor: const Color(0xFFE8F5E9),
       body: FutureBuilder<List<BlogModel>>(
-        future: fetchBlogs(userId),
+        future: fetchBlogs(widget.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -125,13 +73,15 @@ class AddToFavoriteState extends State<AddToFavorite> {
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
                     final blog = snapshot.data![index];
+                    Logger().d(blog.status);
                     DiseaseConstant diseaseConstant = DiseaseConstant();
                     List<String> images =
                         diseaseConstant.getDiseaseImageList(blog.title ?? '');
                     String mainImage = images[0];
                     String sub = diseaseConstant.subtitle[index];
 
-                    return buildCard(blog, mainImage, sub);
+                    return buildCard(
+                        blog, mainImage, blog.status ?? 0, blog.subtitle ?? '');
                   },
                 ),
               );
@@ -142,56 +92,98 @@ class AddToFavoriteState extends State<AddToFavorite> {
     );
   }
 
-  Widget buildCard(BlogModel? blog, String mainImage, String sub) {
+  Widget buildCard(BlogModel? blog, String mainImage, int status, String sub) {
     return Container(
-      margin: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        color: Colors.white,
-        border: Border.all(
-          color: Colors.black,
-          width: 0.1,
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.white,
+          border: Border.all(
+            color: Colors.black,
+            width: 0.1,
+          ),
         ),
-      ),
-      height: 100,
-      child: Slidable(
-        key: ValueKey(blog?.id),
-        endActionPane: ActionPane(
-          motion: ScrollMotion(),
-          children: [
-            SlidableAction(
-              flex: 2,
-              onPressed: (context) async {
-                await favoriteBlog(blog?.id ?? 0, 1);
-                // ignore: use_build_context_synchronously
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                // ignore: use_build_context_synchronously
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Remove from favorite',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+        height: 100,
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DetailPage(id: blog?.id ?? 0),
+              ),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.all(4),
+            height: 100,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8.0),
+                      bottomLeft: Radius.circular(8.0),
                     ),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior
-                        .floating, // Change behavior to floating
+                    child: Image.asset(
+                      mainImage,
+                      fit: BoxFit.fill,
+                      height: 100,
+                    ),
                   ),
-                );
-                setState(() {
-                  fetchBlogs(userId);
-                });
-              },
-              backgroundColor: Color.fromARGB(255, 217, 91, 91),
-              foregroundColor: Colors.white,
-              icon: Icons.delete,
-              label: 'Remove',
+                ),
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          blog?.title ?? '',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(
+                          height: 3,
+                        ),
+                        Text(
+                          sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(
+                          height: 4,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.only(
+                            left: 5,
+                            right: 5,
+                            top: 3,
+                            bottom: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                status == 1 ? Colors.green : Colors.amberAccent,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            status == 1 ? 'Public' : 'Pending',
+                            style: TextStyle(
+                                fontSize: 10,
+                                color:
+                                    status == 1 ? Colors.white : Colors.black),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: buildImageCard(context, blog?.title ?? '', blog?.body ?? '',
-            blog?.id ?? 0, mainImage, blog?.subtitle ?? ''),
-      ),
-    );
+          ),
+        ));
   }
 
   Widget buildImageCard(BuildContext context, String title, String body, int id,
@@ -243,12 +235,17 @@ class AddToFavoriteState extends State<AddToFavorite> {
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text(
-                      sub,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    // subtitle: Text(
+                    //   sub,
+                    //   maxLines: 2,
+                    //   overflow: TextOverflow.ellipsis,
+                    // ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    color: Colors.amberAccent,
+                    child: const Text('Pending'),
+                  )
                 ],
               ),
             ),

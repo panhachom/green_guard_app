@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/image_predict_fail_screen.dart';
 import 'package:green_guard_app/image_predict_success_screen.dart';
 import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/service/image_picker_service.dart';
@@ -37,14 +38,24 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
       _photo = File(file.path);
       List<PredictionModel> predictions =
           await ImageUploaderService.uploadImage(_photo);
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => ImagePredictSuccessScreen(
-            predictions: predictions,
-            photo: _photo,
+
+      PredictionModel bestPrediction =
+          PredictionModel.findMaxProbability(predictions);
+
+      if (bestPrediction.probability < 80) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => const ImagePredictFailScreen(),
+        ));
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ImagePredictSuccessScreen(
+              predictions: predictions,
+              photo: _photo,
+            ),
           ),
-        ),
-      );
+        );
+      }
     } else {
       if (kDebugMode) {
         print('There is Error Occur');
