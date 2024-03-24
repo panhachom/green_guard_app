@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:green_guard_app/image_upload_screen.dart';
 import 'package:green_guard_app/main.dart';
 import 'package:lottie/lottie.dart';
 
@@ -9,9 +8,7 @@ class ImagePredictFailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [buildBackButton(context), buildContent(context)],
-      ),
+      body: buildContent(context),
       backgroundColor: const Color(0xFFE8F5E9),
       bottomNavigationBar: buildButton(context),
     );
@@ -22,12 +19,12 @@ class ImagePredictFailScreen extends StatelessWidget {
       padding: const EdgeInsets.only(top: 20, bottom: 20, left: 10, right: 10),
       child: ElevatedButton(
         onPressed: () {
-          Navigator.of(context).push(
+          Navigator.pushAndRemoveUntil(
+            context,
             MaterialPageRoute(
-              builder: (context) {
-                return const MyHomePage(selectedIndex: 0);
-              },
+              builder: (context) => MyHomePage(selectedIndex: 0),
             ),
+            (Route<dynamic> route) => false,
           );
         },
         style: ElevatedButton.styleFrom(
@@ -81,21 +78,22 @@ class ImagePredictFailScreen extends StatelessWidget {
               height: 20,
             ),
             buildSuggestionText(
-                '1.', 'សូម​បង្ហោះ​រូបភាព​ច្បាស់​លាស់​អំពី​ជំងឺ​ស្លឹក​ស្រូវ។'),
+                '1.', 'សូម​បង្ហោះ​រូបភាព​ដែលច្បាស់​​អំពី​ជំងឺ​ស្លឹក​ស្រូវ។'),
             const SizedBox(
               height: 4,
             ),
             buildSuggestionText(
-                '2.', 'ជៀសវាង​រូបភាព​ដែល​មាន​សញ្ញាទឹក ឬ​ការ​លាប​លើ​អត្ថបទ'),
+                '2.', 'ពិចារណាពង្រីកដើម្បីចាប់យក​ស្លឹក​ស្រូវ​ដែលមាន​ជំងឺ​'),
             const SizedBox(
               height: 4,
             ),
             buildSuggestionText(
-                '3.', 'ប្រើរូបថតដែលមានគុណភាពខ្ពស់ដើម្បីទទួលបានលទ្ធផលល្អ'),
+                '3.', 'រក្សាកាមេរ៉ាឱ្យស្ថិតស្ថេរ ដើម្បីការពារភាពមិនច្បាស់'),
             const SizedBox(
               height: 4,
             ),
-            buildSuggestionText('4.', 'ពិចារណាពង្រីកដើម្បីចាប់យកព័ត៌មានលម្អិត'),
+            buildSuggestionText(
+                '4.', 'ត្រូវប្រាកដថាមិនមានដំណក់ទឹក ឬសំណើមលើផ្ទៃស្លឹក'),
           ],
         ),
       ),

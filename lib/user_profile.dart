@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:green_guard_app/login_screen.dart';
+import 'package:green_guard_app/loginpage.dart';
 import 'package:green_guard_app/main.dart';
+import 'package:green_guard_app/registerpage.dart';
 import 'package:green_guard_app/service/user_service.dart';
 import 'package:green_guard_app/user_blog_list.dart';
 import 'package:green_guard_app/widgets/add_to_favorite.dart';
@@ -25,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     checkUserLoggedIn();
     getUsername();
     getEmail();
+    getUserId();
   }
 
   Future<void> getUserId() async {
@@ -96,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isSignin == true
                         ? Text(username,
                             style: Theme.of(context).textTheme.headline6)
-                        : Text('Welcome',
+                        : Text('សូមស្វាគមន៍',
                             style: Theme.of(context).textTheme.headline6),
                     isSignin == true
                         ? Text(
@@ -108,12 +110,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
+                                  builder: (context) => const LoginPage(),
                                 ),
                               );
                             },
                             child: Text(
-                              'Sign in',
+                              'ចូល',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyText2
@@ -128,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isSignin == true
                 ? buildListTile(context)
                 : const Text(
-                    'Please Sign in to gain more experience',
+                    'សូមចូល ដើម្បីទទួលបានបទពិសោធន៍បន្ថែម',
                     style: TextStyle(fontSize: 16),
                   )
           ],
@@ -160,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 10),
 
         ProfileMenuWidget(
-            title: 'ជំងឺទូទៅ (Blog) ',
+            title: 'អត្ថបទរបស់ខ្ញុំ',
             icon: Icons.feed,
             iconColor: const Color(0xFF4CAF50),
             onPress: () {
@@ -173,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 10),
 
         ProfileMenuWidget(
-          title: 'Logout',
+          title: 'ចាកចេញ',
           icon: Icons.logout,
           iconColor: Colors.red,
           endIcon: false,
@@ -195,29 +197,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Are you sure you want to logout?'),
+          title: const Text('តើ​អ្នក​ប្រាកដ​ជា​ចង់​ចេញ?'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Cancel'),
+              child: const Text('បោះបង់'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
 
                 userService.logoutUser();
-                Navigator.pushReplacement(
+                // Navigator.pushReplacement(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (context) => const MyHomePage(
+                //       selectedIndex: 0,
+                //     ),
+                //   ),
+                // );
+                Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const MyHomePage(
-                      selectedIndex: 0,
-                    ),
+                    builder: (context) => MyHomePage(selectedIndex: 0),
                   ),
+                  (Route<dynamic> route) => false,
                 );
               },
-              child: Text('Logout'),
+              child: Text('ចាកចេញ'),
             ),
           ],
         );

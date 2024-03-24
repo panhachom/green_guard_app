@@ -47,7 +47,6 @@ class ImagePredictSuccessScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          buildBackButton(context),
           FutureBuilder(
             future: fetchBlogDetails(title),
             builder: (context, snapshot) {
@@ -58,10 +57,11 @@ class ImagePredictSuccessScreen extends StatelessWidget {
               } else if (snapshot.hasError) {
                 return Text('Error: ${snapshot.error}');
               } else {
-                return buildContent(context, title, snapshot.data!.id ?? 0);
+                return buildContent(context, snapshot.data ?? BlogModel());
               }
             },
           ),
+          buildBackButton(context),
         ],
       ),
       backgroundColor: const Color(0xFFE8F5E9),
@@ -82,20 +82,24 @@ class ImagePredictSuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget buildContent(BuildContext context, String title, int id) {
+  Widget buildContent(BuildContext context, BlogModel blog) {
+    String title = blog.title ?? '';
+    int id = blog.id ?? 0;
+    String image = blog.images?.first.fileUrl ?? '';
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: Center(
-        child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Center(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(
                 height: 25,
               ),
               Lottie.asset(
                 'assets/images/success.json',
-                width: 250,
+                width: 200,
                 // height: 230,
               ),
               const Text(
@@ -108,7 +112,7 @@ class ImagePredictSuccessScreen extends StatelessWidget {
               const SizedBox(
                 height: 15,
               ),
-              buildImageCard(context, title, id),
+              buildImageCard(context, title, id, image),
               const SizedBox(
                 height: 15,
               ),
@@ -153,10 +157,8 @@ class ImagePredictSuccessScreen extends StatelessWidget {
     );
   }
 
-  Widget buildImageCard(BuildContext context, String title, int id) {
-    DiseaseConstant diseaseConstant = DiseaseConstant();
-    List<String> images = diseaseConstant.getDiseaseImageList(title);
-    String mainImages = images[0];
+  Widget buildImageCard(
+      BuildContext context, String title, int id, String image) {
     return Container(
       width: 320,
       height: 240,
@@ -178,8 +180,8 @@ class ImagePredictSuccessScreen extends StatelessWidget {
                 topLeft: Radius.circular(8.0),
                 bottomLeft: Radius.circular(8.0),
               ),
-              child: Image.asset(
-                mainImages,
+              child: Image.network(
+                image,
                 fit: BoxFit.fill,
                 width: 260,
                 height: 260,

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:full_screen_image/full_screen_image.dart';
-import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/login_screen.dart';
 import 'package:green_guard_app/model/blog_model.dart';
@@ -44,7 +43,7 @@ class _DetailPageState extends State<DetailPage> {
       isSignin = isLoggedIn;
     });
     if (isLoggedIn) {
-      getUserId();
+      await getUserId();
       checkFavorite(widget.id, userId);
     }
   }
@@ -78,6 +77,8 @@ class _DetailPageState extends State<DetailPage> {
         });
       }
     } else {
+      Logger().d(userId);
+      Logger().d(response.body);
       // Handle other status codes or errors
       throw Exception('Failed to check favorite status');
     }
@@ -192,10 +193,8 @@ class _DetailPageState extends State<DetailPage> {
             } else if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
             } else {
-              DiseaseConstant diseaseConstant = DiseaseConstant();
-              List<String> images = diseaseConstant
-                  .getDiseaseImageList(snapshot.data?.title ?? '');
-
+              List<String> images =
+                  snapshot.data!.images?.map((e) => e.fileUrl).toList() ?? [];
               String? createdAt = snapshot.data?.createdAt;
 
               String formattedDate = '';
@@ -205,148 +204,156 @@ class _DetailPageState extends State<DetailPage> {
                     DateFormat.yMMMd().format(DateTime.parse(createdAt));
               }
 
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StaggeredGrid.count(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        children: [
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 2,
-                            mainAxisCellCount: 2,
-                            child: FullScreenWidget(
-                              disposeLevel: DisposeLevel.Medium,
-                              child: Hero(
-                                tag: "img1",
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                  child: Image.asset(
-                                    images[0],
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 2,
-                            mainAxisCellCount: 1,
-                            child: FullScreenWidget(
-                              disposeLevel: DisposeLevel.Medium,
-                              child: Hero(
-                                tag: "img2",
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                  child: Image.asset(
-                                    images[1],
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 1,
-                            mainAxisCellCount: 1,
-                            child: FullScreenWidget(
-                              disposeLevel: DisposeLevel.Medium,
-                              child: Hero(
-                                tag: "img3",
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                  child: Image.asset(
-                                    images[2],
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          StaggeredGridTile.count(
-                            crossAxisCellCount: 1,
-                            mainAxisCellCount: 1,
-                            child: FullScreenWidget(
-                              disposeLevel: DisposeLevel.Medium,
-                              child: Hero(
-                                tag: "img4",
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(5.0),
-                                  child: Image.asset(
-                                    images[3],
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding:
-                            const EdgeInsets.all(10.0), // Margin on all sides
-                        child: Text(
-                          snapshot.data!.title ?? '',
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              return RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    fetchBlogDetails();
+                  });
+                },
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        StaggeredGrid.count(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
                           children: [
-                            SizedBox(
-                              width: 200,
-                              child: ListTile(
-                                leading: const CircleAvatar(
-                                  backgroundImage: NetworkImage(
-                                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtPs8ubbPPA31JXQNO9P4WAnPpGQTJFINxn34IwJhk2AgIcDmHKMiojrVfcuPMJMxerBc&usqp=CAU'),
+                            StaggeredGridTile.count(
+                              crossAxisCellCount: 2,
+                              mainAxisCellCount: 2,
+                              child: FullScreenWidget(
+                                disposeLevel: DisposeLevel.Medium,
+                                child: Hero(
+                                  tag: "img1",
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    child: Image.network(
+                                      images[0],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
-                                title:
-                                    Text(snapshot.data?.user?.name ?? 'User'),
-                                subtitle: Text(formattedDate),
                               ),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 16),
-                              child: IconButton(
-                                icon: Icon(
-                                  isFavorite
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isFavorite ? Colors.red : null,
+                            StaggeredGridTile.count(
+                              crossAxisCellCount: 2,
+                              mainAxisCellCount: 1,
+                              child: FullScreenWidget(
+                                disposeLevel: DisposeLevel.Medium,
+                                child: Hero(
+                                  tag: "img2",
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    child: Image.network(
+                                      images[1],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () async {
-                                  if (isSignin == true) {
-                                    favoriteBlog(widget.id, userId);
-                                  } else {
-                                    buildSignInDialog(context);
-                                  }
-                                },
                               ),
-                            )
+                            ),
+                            StaggeredGridTile.count(
+                              crossAxisCellCount: 1,
+                              mainAxisCellCount: 1,
+                              child: FullScreenWidget(
+                                disposeLevel: DisposeLevel.Medium,
+                                child: Hero(
+                                  tag: "img3",
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    child: Image.network(
+                                      images[2],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            StaggeredGridTile.count(
+                              crossAxisCellCount: 1,
+                              mainAxisCellCount: 1,
+                              child: FullScreenWidget(
+                                disposeLevel: DisposeLevel.Medium,
+                                child: Hero(
+                                  tag: "img4",
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    child: Image.network(
+                                      images[3],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Html(
-                          data: snapshot.data?.body,
-                          style: {
-                            "body": Style(
-                              fontSize: FontSize(
-                                  16.0), // Change the value to the desired font size
+                        Padding(
+                          padding:
+                              const EdgeInsets.all(10.0), // Margin on all sides
+                          child: Text(
+                            snapshot.data!.title ?? '',
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
                             ),
-                          },
+                          ),
                         ),
-                      ),
-                    ],
+                        SizedBox(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              SizedBox(
+                                width: 200,
+                                child: ListTile(
+                                  leading: const CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                        'https://st4.depositphotos.com/1156795/20814/v/450/depositphotos_208142524-stock-illustration-profile-placeholder-image-gray-silhouette.jpg'),
+                                  ),
+                                  title: Text(
+                                    snapshot.data?.user?.name ?? 'អ្នក​ប្រើ',
+                                  ),
+                                  subtitle: Text(formattedDate),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: IconButton(
+                                  icon: Icon(
+                                    isFavorite
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: isFavorite ? Colors.red : null,
+                                  ),
+                                  onPressed: () async {
+                                    if (isSignin == true) {
+                                      favoriteBlog(widget.id, userId);
+                                    } else {
+                                      buildSignInDialog(context);
+                                    }
+                                  },
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Html(
+                            data: snapshot.data?.body,
+                            style: {
+                              "body": Style(
+                                fontSize: FontSize(
+                                    16.0), // Change the value to the desired font size
+                              ),
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -360,14 +367,14 @@ class _DetailPageState extends State<DetailPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Sign In Required'),
-          content: const Text('You need to sign in to favorite this blog.'),
+          title: const Text('តម្រូវឱ្យចូល'),
+          content: const Text('អ្នក​ត្រូវ​ចូល​ដើម្បី​ចូល​ចិត្ត​អត្ថបទ​នេះ'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close the dialog
               },
-              child: const Text('Cancel'),
+              child: const Text('បោះបង់'),
             ),
             TextButton(
               onPressed: () {
@@ -378,7 +385,7 @@ class _DetailPageState extends State<DetailPage> {
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
                 );
               },
-              child: const Text('Sign In'),
+              child: const Text('ចូល'),
             ),
           ],
         );

@@ -34,20 +34,15 @@ class _UserBlogListState extends State<UserBlogList> {
 
   @override
   Widget build(BuildContext context) {
+    Logger().d(widget.id);
     return Scaffold(
       appBar: AppBar(
-        title: const ListTile(
-          leading: Icon(
-            Icons.favorite,
-            color: Colors.red,
-          ),
-          title: Text(
-            'Your Blog',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
-            textAlign: TextAlign.start,
-          ),
+        title: const Text(
+          'អត្ថបទរបស់ខ្ញុំ',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
+          textAlign: TextAlign.start,
         ),
-        centerTitle: false,
+        centerTitle: true,
       ),
       backgroundColor: const Color(0xFFE8F5E9),
       body: FutureBuilder<List<BlogModel>>(
@@ -61,9 +56,11 @@ class _UserBlogListState extends State<UserBlogList> {
             if (snapshot.data!.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'No Favorite post yet',
-                  style: TextStyle(fontSize: 15),
+                child: Center(
+                  child: Text(
+                    'មិនទាន់មានអត្ថបទ',
+                    style: TextStyle(fontSize: 15),
+                  ),
                 ),
               );
             } else {
@@ -78,7 +75,6 @@ class _UserBlogListState extends State<UserBlogList> {
                     List<String> images =
                         diseaseConstant.getDiseaseImageList(blog.title ?? '');
                     String mainImage = images[0];
-                    String sub = diseaseConstant.subtitle[index];
 
                     return buildCard(
                         blog, mainImage, blog.status ?? 0, blog.subtitle ?? '');
@@ -169,11 +165,12 @@ class _UserBlogListState extends State<UserBlogList> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            status == 1 ? 'Public' : 'Pending',
+                            status == 1 ? 'បានបង្ហោះ' : 'កំពុងរង់ចាំ',
                             style: TextStyle(
                                 fontSize: 10,
                                 color:
-                                    status == 1 ? Colors.white : Colors.black),
+                                    status == 1 ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.bold),
                           ),
                         )
                       ],
@@ -244,7 +241,7 @@ class _UserBlogListState extends State<UserBlogList> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     color: Colors.amberAccent,
-                    child: const Text('Pending'),
+                    child: const Text('កំពុងរង់ចាំ'),
                   )
                 ],
               ),

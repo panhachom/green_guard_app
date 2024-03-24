@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:anim_search_bar/anim_search_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:green_guard_app/constraint/disease_constant.dart';
 import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/create_blog_screen.dart';
 import 'package:green_guard_app/detailpage.dart';
@@ -23,6 +22,8 @@ class _BlogListScreenState extends State<BlogListScreen> {
   String _selectedCategory = '';
   late bool showFilter = true;
 
+  List<BlogModel> allBlogs = [];
+
   @override
   void initState() {
     super.initState();
@@ -42,13 +43,27 @@ class _BlogListScreenState extends State<BlogListScreen> {
     }
   }
 
+  Future<List<BlogModel>> _fetchAllBlogs() async {
+    final response =
+        await http.get(Uri.parse('${Helper.developmentUrl}/api/blogs'));
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body)['blogs'];
+      List<BlogModel> blogs =
+          data.map((json) => BlogModel.fromJson(json)).toList();
+
+      return blogs;
+    } else {
+      throw Exception('Failed to load blogs');
+    }
+  }
+
   Future<void> _filterByCategory(String category) async {
     setState(() {
       _loading = true;
     });
     try {
       final response = await http.get(Uri.parse(
-          '${Helper.developmentUrl}/api/blogs/filterByCategory/$category'));
+          '${Helper.developmentUrl}/api/blogs/filter-by-category?category=$category'));
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body)['blogs'];
         List<BlogModel> blogs =
@@ -98,37 +113,18 @@ class _BlogListScreenState extends State<BlogListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            Icons.feed,
-          ),
-          title: Text(
-            'ចំណេះដឹងថ្មីៗ',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
-          ),
+        title: const Text(
+          'ចំណេះដឹងថ្មីៗ',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
         ),
-        actions: [],
-        centerTitle: true,
+        actions: [
+          buildFilter(context),
+        ],
+        centerTitle: false,
       ),
       backgroundColor: const Color(0xFFE8F5E9),
       body: Column(
         children: [
-          // Padding(
-          //   padding: const EdgeInsets.all(8.0),
-          //   child: TextField(
-          //     controller: searchController,
-          //     decoration: InputDecoration(
-          //       hintText: 'Search blogs...',
-          //       suffixIcon: IconButton(
-          //         icon: Icon(Icons.search),
-          //         onPressed: () {
-          //           searchBlogs(searchController.text);
-          //         },
-          //       ),
-          //     ),
-          //   ),
-          // ),
           Padding(
             padding:
                 const EdgeInsets.only(top: 0, bottom: 0, left: 10, right: 10),
@@ -146,17 +142,14 @@ class _BlogListScreenState extends State<BlogListScreen> {
                     searchBlogs(s);
                   },
                 ),
-                Visibility(
-                  visible: showFilter,
-                  child: buildFilter(),
-                ),
               ],
             ),
           ),
-
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
                 : buildContent(),
           ),
         ],
@@ -182,27 +175,25 @@ class _BlogListScreenState extends State<BlogListScreen> {
     );
   }
 
-  Container buildFilter() {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.all(8.0),
-      child: DropdownButton<String>(
-        value: _selectedCategory.isNotEmpty ? _selectedCategory : null,
-        hint: Text('Filter'),
-        onChanged: (String? newValue) {
-          if (newValue != null) {
-            _selectedCategory = newValue;
-            _filterByCategory(newValue);
-          }
-        },
-        items:
-            BlogModel.CATEGORIES.entries.map((MapEntry<String, String> entry) {
-          return DropdownMenuItem<String>(
+  Widget buildFilter(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.filter_list,
+        size: 28,
+      ),
+      onSelected: (String newValue) {
+        _selectedCategory = BlogModel.CATEGORIES[newValue] ?? '';
+        _filterByCategory(_selectedCategory);
+      },
+      itemBuilder: (BuildContext context) {
+        return BlogModel.CATEGORIES.entries
+            .map((MapEntry<String, String> entry) {
+          return PopupMenuItem<String>(
             value: entry.key,
             child: Text(entry.value),
           );
-        }).toList(),
-      ),
+        }).toList();
+      },
     );
   }
 
@@ -216,28 +207,56 @@ class _BlogListScreenState extends State<BlogListScreen> {
           return Text('Error: ${snapshot.error}');
         } else {
           if (snapshot.data!.isEmpty) {
-            return const Center(child: Text('No results found.'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text('រកមិនឃើញលទ្ធផលទេ'),
+                  TextButton(
+                    onPressed: () async {
+                      setState(() {
+                        _futureBlogs = _fetchAllBlogs();
+                      });
+                    },
+                    child: const Text(
+                      'ត្រឡប់មកវិញ',
+                      style: TextStyle(
+                        color: Color(
+                          0xff388E3C,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            );
           } else {
-            return Padding(
-              padding: const EdgeInsets.only(left: 4, right: 4, top: 2),
-              child: ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  final blog = snapshot.data![index];
-                  DiseaseConstant diseaseConstant = DiseaseConstant();
-                  List<String> images =
-                      diseaseConstant.getDiseaseImageList(blog.title ?? '');
-                  String mainImage = images[0];
-                  String sub = diseaseConstant.subtitle[index];
+            return RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _futureBlogs = _fetchAllBlogs();
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4, right: 4, top: 2),
+                child: ListView.builder(
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    final blog = snapshot.data![index];
 
-                  return buildImageCard(
-                      context,
-                      blog.title ?? '',
-                      blog.body ?? '',
-                      blog.id ?? 0,
-                      mainImage,
-                      blog.subtitle ?? '');
-                },
+                    String mainImage =
+                        snapshot.data?[index].images?.first.fileUrl ?? '';
+
+                    return buildImageCard(
+                        context,
+                        blog.title ?? '',
+                        blog.body ?? '',
+                        blog.id ?? 0,
+                        mainImage,
+                        blog.subtitle ?? '');
+                  },
+                ),
               ),
             );
           }
@@ -277,7 +296,7 @@ class _BlogListScreenState extends State<BlogListScreen> {
                   topLeft: Radius.circular(8.0),
                   bottomLeft: Radius.circular(8.0),
                 ),
-                child: Image.asset(
+                child: Image.network(
                   mainImage,
                   fit: BoxFit.fill,
                   height: 100,

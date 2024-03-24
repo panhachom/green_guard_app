@@ -1,16 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/constraint/helper.dart';
 import 'package:green_guard_app/image_predict_fail_screen.dart';
 import 'package:green_guard_app/image_predict_success_screen.dart';
+import 'package:green_guard_app/model/blog_model.dart';
 import 'package:green_guard_app/model/prediction_model.dart';
 import 'package:green_guard_app/service/image_picker_service.dart';
 import 'package:green_guard_app/service/image_uploader_service.dart';
+import 'package:green_guard_app/widgets/cm_bottom_sheet.dart';
 import 'package:green_guard_app/widgets/cm_card.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:http/http.dart' as http;
 
 class ImageUploadScreen extends StatefulWidget {
   const ImageUploadScreen({super.key});
@@ -80,28 +86,26 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     );
   }
 
-  // Future uploadFile() async {
-  //   if (_photo == null) return;
-  //   final fileName = Path.basename(_photo!.path);
-  //   final destination = 'files/$fileName';
+  Future<List<BlogModel>> _fetchAllBlogs() async {
+    final response =
+        await http.get(Uri.parse('${Helper.developmentUrl}/api/blogs'));
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body)['blogs'];
+      List<BlogModel> blogs =
+          data.map((json) => BlogModel.fromJson(json)).toList();
 
-  //   try {
-  //     final ref = FirebaseStorage.instance.ref(destination).child('file/');
-  //     await ref.putFile(_photo!);
-  //     final downloadUrl = await ref.getDownloadURL();
-  //     final bytes =
-  //         await Dio().get(downloadUrl).then((response) => response.data);
-  //     final imageProvider = NetworkImage(downloadUrl);
-  //     Logger().d(imageProvider);
-  //   } catch (e) {
-  //     print(e);
-  //     print('errr');
-  //   }
-  // }
+      return blogs;
+    } else {
+      throw Exception('Failed to load blogs');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appBar: AppBar(
+      //   backgroundColor: const Color(0xFFE8F5E9),
+      // ),
       backgroundColor: const Color(0xFFE8F5E9),
       body: buildContent(),
     );
@@ -128,83 +132,65 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
   }
 
   Widget buildBlogContent() {
-    return Column(
-      children: [
-        const ListTile(
-          leading: Icon(
-            Icons.feed,
-            size: 35,
-            color: Color(0xFF4CAF50),
-          ),
-          title: Text(
-            'ចំណេះដឹងថ្មីៗ ',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            'ស្វែងយល់បន្ថែមអំពីដំណើរនៃជំងឺនៅលើស្លឹកស្រូវ',
-            style: TextStyle(fontSize: 13),
-          ),
-        ),
-        const SizedBox(
-          height: 15,
-        ),
-        SizedBox(
-          height: 240,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            shrinkWrap: true,
-            separatorBuilder: (context, index) {
-              return const SizedBox(
-                width: 10,
-              );
-            },
-            itemCount: 3,
-            physics: const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              return CmCard(
-                image: cardModels[index].image,
-                title: cardModels[index].title,
-                subtitle: cardModels[index].subtitle,
-              );
-            },
-          ),
-        )
-      ],
-    );
-  }
-
-  SizedBox buildCard() {
-    return SizedBox(
-      width: 260,
-      height: 240,
-      child: Card(
-        shape: BeveledRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8.0),
-                topRight: Radius.circular(8.0),
-              ),
-              child: Image.network(
-                'https://www.kissanghar.pk/assets/img/insect_blogs/40371820220606214.png',
-                height: 130,
-                fit: BoxFit.fill,
-                width: 260,
-              ),
-            ),
-            const ListTile(
-              title: Text('Brown Spot'),
-              subtitle: Text(
-                'The most Comon happen in Kampong Cham Province',
-                style: TextStyle(fontSize: 12),
-              ),
-            )
-          ],
-        ),
-      ),
+    return FutureBuilder<List<BlogModel>>(
+      future: _fetchAllBlogs(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          if (snapshot.data!.isEmpty) {
+            return const SizedBox.shrink();
+          } else {
+            return Column(
+              children: [
+                const ListTile(
+                  leading: Icon(
+                    Icons.feed,
+                    size: 35,
+                    color: Color(0xFF4CAF50),
+                  ),
+                  title: Text(
+                    'ចំណេះដឹងថ្មីៗ ',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'ស្វែងយល់បន្ថែមអំពីដំណើរនៃជំងឺនៅលើស្លឹកស្រូវ',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+                const SizedBox(
+                  height: 15,
+                ),
+                SizedBox(
+                  height: 240,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                    separatorBuilder: (context, index) {
+                      return const SizedBox(
+                        width: 10,
+                      );
+                    },
+                    itemCount: snapshot.data?.length ?? 0,
+                    physics: const BouncingScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return CmCard(
+                        id: snapshot.data?[index].id ?? 0,
+                        image:
+                            snapshot.data?[index].images?.first.fileUrl ?? "",
+                        title: snapshot.data?[index].title ?? '',
+                        subtitle: snapshot.data?[index].subtitle ?? '',
+                      );
+                    },
+                  ),
+                )
+              ],
+            );
+          }
+        }
+      },
     );
   }
 
@@ -212,20 +198,73 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const ListTile(
-          leading: Icon(
+        ListTile(
+          leading: const Icon(
             Icons.note_alt_outlined,
             size: 35,
             color: Color(0xFF4CAF50),
           ),
-          title: Text(
-            'សូមបញ្ចូលរូបភាពរបស់អ្នកនៅទីនេះ',
+          title: const Text(
+            'សូមបញ្ចូលរូបភាពនៃជំងីស្រូវនៅទីនេះ',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          subtitle: Text(
-              'នេះគឺជា Weak AI ត្រូវប្រាកដថាបង្ហោះរូបភាពត្រឹមត្រូវ បើមិនដូច្នេះទេលទ្ធផលនឹងមិនត្រូវបានគេរំពឹងទុកនោះទេ',
-              style: TextStyle(fontSize: 13)),
+          subtitle: Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(
+                  text:
+                      'នេះគឺជា Weak AI តែប៉ុណ្ណោះសូមបង្ហោះរូបភាពអោយបានត្រឹមត្រូវ បើមិនដូច្នេះទេលទ្ធផលនឹងមិនត្រឹមត្រូវដូចការរំពឹងទុកនោះទេ។ សូមចុច ',
+                  style: TextStyle(fontSize: 13),
+                ),
+                TextSpan(
+                  text: 'ការណែនាំ',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4CAF50),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      CmBottomSheet(
+                        title: 'ការណែនាំ',
+                        contentBuilder: (context) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                buildSuggestionText('1.',
+                                    'សូម​បង្ហោះ​រូបភាព​ដែលច្បាស់​​អំពី​ជំងឺ​ស្លឹក​ស្រូវ។'),
+                                const SizedBox(
+                                  height: 4,
+                                ),
+                                buildSuggestionText('2.',
+                                    'ពិចារណាពង្រីកដើម្បីចាប់យក​ស្លឹក​ស្រូវ​ដែលមាន​ជំងឺ​'),
+                                const SizedBox(
+                                  height: 4,
+                                ),
+                                buildSuggestionText('3.',
+                                    'រក្សាកាមេរ៉ាឱ្យស្ថិតស្ថេរ ដើម្បីការពារភាពមិនច្បាស់'),
+                                const SizedBox(
+                                  height: 4,
+                                ),
+                                buildSuggestionText('4.',
+                                    'ត្រូវប្រាកដថាមិនមានដំណក់ទឹក ឬសំណើមលើផ្ទៃស្លឹក'),
+                              ],
+                            ),
+                          );
+                        },
+                      ).show(context);
+                    },
+                ),
+                const TextSpan(
+                  text: ' ដើម្បីឱ្យយល់ច្បាស់',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+          ),
         ),
+        const SizedBox(height: 5),
         const SizedBox(
           height: 30,
         ),
@@ -244,6 +283,27 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
         const SizedBox(
           height: 30,
         ),
+      ],
+    );
+  }
+
+  Widget buildSuggestionText(String number, String title) {
+    return Row(
+      children: [
+        // const Icon(Icons.check_box_outlined, size: 20),
+        Text(
+          number,
+        ),
+        const SizedBox(
+          width: 6,
+        ),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        )
       ],
     );
   }
@@ -272,34 +332,3 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     );
   }
 }
-
-class CardModel {
-  final String image;
-  final String title;
-  final String subtitle;
-
-  CardModel({required this.image, required this.title, required this.subtitle});
-}
-
-List<CardModel> cardModels = [
-  CardModel(
-    image: 'https://cdn.mos.cms.futurecdn.net/x99euLV6MxiMWvZYhXLy9a.jpg',
-    title: 'Brown Spot',
-    subtitle:
-        'Brown spots on rice leaves could be indicative of various issues',
-  ),
-  CardModel(
-    image:
-        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAirlOeJQA2VAc5Kxi3VOUXlEag-yl1TBgAg&usqp=CAU',
-    title: 'Stem Rot',
-    subtitle:
-        'often caused by the fungus Rhizoctonia solani, is a common fungal disease',
-  ),
-  CardModel(
-    image:
-        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbswxGWcGw7nRGsMkV5FTtbM5l4L4Qv7r3XQ&usqp=CAU',
-    title: 'Sheath Blight',
-    subtitle:
-        'common fungal disease affecting rice crops, caused by the fungus Rhizoctonia solani',
-  ),
-];

@@ -22,26 +22,49 @@ class LoginScreen extends StatelessWidget {
     );
 
     if (response.statusCode == 200) {
-      // Parse the response body to extract user email
+      Logger().d('Hiii');
+      // Parse the response body to ext
+      //ract user email
       final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['success'] != false) {
+        // Save authentication token locally
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString('auth_token', responseData['data']['token']);
+        prefs.setString('user_email', responseData['data']['email']);
+        prefs.setString('username', responseData['data']['name']);
 
-      // Save authentication token locally
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('auth_token', responseData['data']['token']);
-      prefs.setString('user_email', responseData['data']['email']);
-      prefs.setString('username', responseData['data']['name']);
+        prefs.setInt('user_id', responseData['data']['id']);
 
-      prefs.setInt('user_id', responseData['data']['id']);
+        Logger().d(responseData['data']['token']);
 
-      Logger().d(responseData['data']['token']);
-
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const MyHomePage(
-            selectedIndex: 2,
+        // ignore: use_build_context_synchronously
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const MyHomePage(
+              selectedIndex: 2,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // ignore: use_build_context_synchronously
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Login Fail"),
+              content: const Text("User not found"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      }
     } else {
       if (kDebugMode) {
         print('Login failed');

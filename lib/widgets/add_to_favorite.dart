@@ -88,18 +88,12 @@ class AddToFavoriteState extends State<AddToFavorite> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const ListTile(
-          leading: Icon(
-            Icons.favorite,
-            color: Colors.red,
-          ),
-          title: Text(
-            'មើលអត្ដបទដែលចូលចិត្ត',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
-            textAlign: TextAlign.start,
-          ),
+        title: const Text(
+          'គម្រងអត្ថបទចូលចិត្ត',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
+          textAlign: TextAlign.center,
         ),
-        centerTitle: false,
+        centerTitle: true,
       ),
       backgroundColor: const Color(0xFFE8F5E9),
       body: FutureBuilder<List<BlogModel>>(
@@ -113,9 +107,11 @@ class AddToFavoriteState extends State<AddToFavorite> {
             if (snapshot.data!.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'No Favorite post yet',
-                  style: TextStyle(fontSize: 15),
+                child: Center(
+                  child: Text(
+                    'មិនទាន់មានអត្ដបទចូលចិត្ត',
+                    style: TextStyle(fontSize: 15),
+                  ),
                 ),
               );
             } else {
@@ -162,17 +158,17 @@ class AddToFavoriteState extends State<AddToFavorite> {
             SlidableAction(
               flex: 2,
               onPressed: (context) async {
-                await favoriteBlog(blog?.id ?? 0, 1);
+                await favoriteBlog(blog?.id ?? 0, userId);
                 // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Remove from favorite',
+                      'លុបចេញពីគម្រងអត្ថបទចូលចិត្ត',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    backgroundColor: Colors.red,
+                    backgroundColor: Color.fromARGB(255, 217, 91, 91),
                     behavior: SnackBarBehavior
                         .floating, // Change behavior to floating
                   ),
@@ -181,10 +177,10 @@ class AddToFavoriteState extends State<AddToFavorite> {
                   fetchBlogs(userId);
                 });
               },
-              backgroundColor: Color.fromARGB(255, 217, 91, 91),
+              backgroundColor: const Color.fromARGB(255, 217, 91, 91),
               foregroundColor: Colors.white,
               icon: Icons.delete,
-              label: 'Remove',
+              label: 'លុបចេញ',
             ),
           ],
         ),

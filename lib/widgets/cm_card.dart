@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:green_guard_app/detailpage.dart';
 
 class CmCard extends StatelessWidget {
+  final int id;
   final String image;
   final String title;
   final String subtitle;
 
   const CmCard({
     super.key,
+    required this.id,
     required this.image,
     required this.title,
     required this.subtitle,
@@ -15,7 +18,13 @@ class CmCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DetailPage(id: id),
+          ),
+        );
+      },
       child: SizedBox(
         width: 260,
         height: 240,
@@ -43,7 +52,8 @@ class CmCard extends StatelessWidget {
                         radius: 20,
                         child: CircleAvatar(
                           backgroundImage: NetworkImage(
-                              'https://lh3.googleusercontent.com/u5G4lXyNl69C1M298f2yMu610s5oSW98TAAVkze5Gek8B5qMDeJ2dFko0x3cXOaoJVA1339aOaOq3uTM=w544-h544-p-l90-rj'),
+                            'https://st4.depositphotos.com/1156795/20814/v/450/depositphotos_208142524-stock-illustration-profile-placeholder-image-gray-silhouette.jpg',
+                          ),
                           radius: 18,
                         ),
                       ),
